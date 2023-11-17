@@ -1,0 +1,45 @@
+.my-table {
+    width: 100%
+}
+
+.footer-row {
+    padding: 10px;
+}
+
+.bold {
+    font-weight: bolder;
+}
+
+.errors {
+    background-color: lightpink;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.invoice-header {
+    display: flex;
+    flex-direction: row;
+
+    div {
+        margin-right: 10px;
+    }
+}
+
+.invoice-footer {
+    float: right;
+    padding: 10px;
+
+    button {
+        margin-left: 10px;
+    }
+}
+
+.my-card {
+    max-width: 80vw;
+}
+
+.dates {
+    float: right;
+    margin-top: 20px;
+    padding-bottom: 30px;
+}

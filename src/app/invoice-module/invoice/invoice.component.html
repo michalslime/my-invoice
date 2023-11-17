@@ -1,0 +1,158 @@
+<div>
+    <mat-card>
+        <mat-card-header>
+            <h1>Faktura Kontraktowca</h1>            
+        </mat-card-header>
+        <mat-card-content>
+            <div class="errors" *ngIf="errors.length > 0">
+                Wystąpiły następujące błędy:
+                <ol>
+                    <li *ngFor="let error of errors">
+                        {{ error }}
+                    </li>
+                </ol>
+            </div>
+            <div class="invoice-header">
+                <div>
+                    <mat-form-field>
+                        <mat-label>Numer NIP</mat-label>
+                        <input type="text" matInput [(ngModel)]="invoice.nip" required #nipNumber="ngModel">
+                        <mat-error *ngIf="nipNumber.invalid">Pole zawiera błąd</mat-error>
+                    </mat-form-field>
+                </div>
+                <div>
+                    <mat-form-field>
+                        <mat-label>Waluta</mat-label>
+                        <input type="text" matInput [(ngModel)]="invoice.currency" required #currency="ngModel">
+                        <mat-error *ngIf="currency.invalid">Pole zawiera błąd</mat-error>
+                    </mat-form-field>
+                </div>
+            </div>
+            <table mat-table [dataSource]="dataSource" class="mat-elevation-z8">
+                <ng-container matColumnDef="vatRate">
+                    <th mat-header-cell *matHeaderCellDef> Stawka VAT </th>
+                    <td mat-cell *matCellDef="let element">
+                        <mat-form-field>
+                            <mat-label>Stawka VAT</mat-label>
+                            <mat-select [(value)]="element.vatRate"
+                                (selectionChange)="recalculateFromVATPerspective(element)">
+                                <mat-option *ngFor="let vatRate of vatRates" [value]="vatRate.value">{{ vatRate.text
+                                    }}</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                    </td>
+                    <td mat-footer-cell *matFooterCellDef>
+                        <div class="footer-row"><button mat-raised-button type="button" (click)="add()">Dodaj
+                                wiersz</button>
+                        </div>
+                        <div class="footer-row">Razem:</div>
+                        <div class="footer-row">&nbsp;</div>
+                    </td>
+                </ng-container>
+
+                <ng-container matColumnDef="nettoAmount">
+                    <th mat-header-cell *matHeaderCellDef> Kwota netto </th>
+                    <td mat-cell *matCellDef="let element">
+                        <mat-form-field>
+                            <input type="number" matInput [(ngModel)]="element.nettoAmount" min="0" required
+                                #nettoAmount="ngModel" (ngModelChange)="recalculateFromVATPerspective(element)">
+                            <mat-hint>Pole wspiera obliczenia</mat-hint>
+                            <mat-error *ngIf="nettoAmount.invalid">Pole zawiera błąd</mat-error>
+                        </mat-form-field>
+                    </td>
+                    <td mat-footer-cell *matFooterCellDef>
+                        <div class="footer-row">&nbsp;</div>
+                        <div class="footer-row">{{totalNetto}} </div>
+                        <div class="footer-row">&nbsp;</div>
+                    </td>
+                </ng-container>
+
+                <ng-container matColumnDef="vatAmount">
+                    <th mat-header-cell *matHeaderCellDef> Kwota VAT </th>
+                    <td mat-cell *matCellDef="let element">
+                        <mat-form-field>
+                            <input type="number" matInput [(ngModel)]="element.vatAmount" min="0" required
+                                #vatAmount="ngModel" (ngModelChange)="recalculateFromVatAmountPerspective(element)">
+                            <mat-hint>Pole wspiera obliczenia</mat-hint>
+                            <mat-error *ngIf="vatAmount.invalid">Pole zawiera błąd</mat-error>
+                        </mat-form-field>
+                    </td>
+                    <td mat-footer-cell *matFooterCellDef>
+                        <div class="footer-row">&nbsp;</div>
+                        <div class="footer-row">{{totalVat}} </div>
+                        <div class="footer-row">Razem do zapłaty:</div>
+                    </td>
+                </ng-container>
+
+                <ng-container matColumnDef="bruttoAmount">
+                    <th mat-header-cell *matHeaderCellDef> Kwota brutto </th>
+                    <td mat-cell *matCellDef="let element">
+                        <mat-form-field>
+                            <input type="number" matInput [(ngModel)]="element.bruttoAmount" min="0" required
+                                #bruttoAmount="ngModel"
+                                (ngModelChange)="recalculateFromBruttoAmountPerspective(element)">
+                            <mat-hint>Pole wspiera obliczenia</mat-hint>
+                            <mat-error *ngIf="bruttoAmount.invalid">Pole zawiera błąd</mat-error>
+                        </mat-form-field>
+                    </td>
+                    <td mat-footer-cell *matFooterCellDef>
+                        <div class="footer-row">&nbsp;</div>
+                        <div class="footer-row">{{totalBrutto}} </div>
+                        <div class="footer-row bold">{{totalBrutto}}</div>
+                    </td>
+                </ng-container>
+
+                <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef> </th>
+                    <td mat-cell *matCellDef="let element">
+                        <button mat-mini-fab color="warn" (click)="remove(element)">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </td>
+                    <td mat-footer-cell *matFooterCellDef>
+                        <div class="footer-row">&nbsp;</div>
+                        <div class="footer-row">&nbsp;</div>
+                        <div class="footer-row bold">&nbsp;</div>
+                    </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                <tr mat-footer-row *matFooterRowDef="displayedColumns"></tr>
+            </table>
+            <div class="dates">
+                <div>
+                    <mat-form-field>
+                        <input matInput [matDatepicker]="issueDate" [(ngModel)]="invoice.issueDate">
+                        <mat-hint>Data wystawienia</mat-hint>
+                        <mat-datepicker-toggle matIconSuffix [for]="issueDate"></mat-datepicker-toggle>
+                        <mat-datepicker #issueDate></mat-datepicker>
+                    </mat-form-field>
+                </div>
+                <div>
+                    <mat-form-field>
+                        <input matInput [matDatepicker]="deliveryDate" [(ngModel)]="invoice.deliveryDate">
+                        <mat-hint>Data dostawy</mat-hint>
+                        <mat-datepicker-toggle matIconSuffix [for]="deliveryDate"></mat-datepicker-toggle>
+                        <mat-datepicker #deliveryDate></mat-datepicker>
+                    </mat-form-field>
+                </div>
+                <div>
+                    <mat-form-field>
+                        <input matInput [matDatepicker]="paymentDate" [(ngModel)]="invoice.paymentDate">
+                        <mat-hint>Termin płatności</mat-hint>
+                        <mat-datepicker-toggle matIconSuffix [for]="paymentDate"></mat-datepicker-toggle>
+                        <mat-datepicker #paymentDate></mat-datepicker>
+                    </mat-form-field>
+                </div>
+            </div>
+        </mat-card-content>
+        <mat-card-footer>            
+            <div class="invoice-footer">
+                <button mat-raised-button type="button">Usuń</button>
+                <button mat-raised-button type="button">Zapisz</button>
+                <button mat-raised-button type="button" (click)="save()">Zapisz i wyślij do zatwierdzenia</button>
+            </div>
+        </mat-card-footer>
+    </mat-card>
+</div>
